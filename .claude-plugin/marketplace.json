@@ -1,0 +1,15 @@
+{
+  "name": "leet",
+  "description": "A LeetCode hub inside Claude Code.",
+  "owner": {
+    "name": "Amir Hashemi",
+    "url": "https://github.com/Hashemi-Amir"
+  },
+  "plugins": [
+    {
+      "name": "leet",
+      "source": "./",
+      "description": "Daily problems on a pattern roadmap, an in-pane code editor with a console, real test runs, a Socratic tutor and progress tracking."
+    }
+  ]
+}

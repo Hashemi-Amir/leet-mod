@@ -1,0 +1,359 @@
+<title>Leet Desktop Test Run</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column; a sticky run bar (progress + report) above numbered test sections, each test a row with verdict chips. */
+:root {
+  --bg: #f6f7f5;
+  --surface: #ffffff;
+  --ink: #18201c;
+  --muted: #5d6862;
+  --line: #dde2de;
+  --accent: #1f7a55;
+  --accent-soft: #e3f1ea;
+  --pass: #1f7a55;
+  --issue: #c2412d;
+  --issue-soft: #fbe9e5;
+  --skip: #8a6a12;
+  --skip-soft: #f6efd9;
+  --code-bg: #eef1ee;
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111613; --surface: #181f1b; --ink: #e6ece8; --muted: #9aa69f; --line: #2a332e;
+    --accent: #4cc38a; --accent-soft: #17311f; --pass: #4cc38a; --issue: #f07a63; --issue-soft: #3a1d17;
+    --skip: #e0b84a; --skip-soft: #33290f; --code-bg: #0d120f; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111613; --surface: #181f1b; --ink: #e6ece8; --muted: #9aa69f; --line: #2a332e;
+  --accent: #4cc38a; --accent-soft: #17311f; --pass: #4cc38a; --issue: #f07a63; --issue-soft: #3a1d17;
+  --skip: #e0b84a; --skip-soft: #33290f; --code-bg: #0d120f; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font: 15px/1.55 var(--body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 64px;
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.wrap { max-width: 820px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+header.intro { padding-top: 36px; display: flex; flex-direction: column; gap: 10px; }
+.eyebrow { font: 500 12px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+h1 { font: 700 clamp(28px, 5vw, 40px)/1.1 var(--display); margin: 0; text-wrap: balance; letter-spacing: -.01em; }
+.lede { color: var(--muted); max-width: 64ch; margin: 0; }
+.runbar {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  padding-block: 12px; border-bottom: 1px solid var(--line);
+  display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px;
+}
+.meter { flex: 1 1 220px; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.meter-label { font: 500 13px/1 var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.meter-track { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; display: flex; }
+.meter-track span { display: block; height: 100%; transition: width .2s; }
+.seg-pass { background: var(--pass); } .seg-issue { background: var(--issue); } .seg-skip { background: var(--skip); }
+button { font: inherit; cursor: pointer; }
+.btn {
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  padding: 8px 14px; border-radius: 6px; font-weight: 600; font-size: 14px;
+}
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+.btn:focus-visible, .chip:focus-visible, .copy:focus-visible, textarea:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.status { font-size: 13px; color: var(--accent); min-height: 1em; }
+section.block { display: flex; flex-direction: column; gap: 12px; }
+.block-head { display: flex; align-items: baseline; gap: 12px; }
+.block-num { font: 500 13px/1 var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+h2 { font: 600 21px/1.2 var(--display); margin: 0; text-wrap: balance; }
+.block-note { color: var(--muted); margin: 0; font-size: 14px; max-width: 64ch; }
+.tests { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); overflow: hidden; }
+.test { padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--line); }
+.test:first-child { border-top: 0; }
+.test[data-v="issue"] { background: var(--issue-soft); }
+.test-top { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: flex-start; justify-content: space-between; }
+.test-title { font-weight: 600; min-width: 0; flex: 1 1 280px; }
+.test-id { font: 500 12px/1 var(--mono); color: var(--muted); margin-right: 6px; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip {
+  border: 1px solid var(--line); background: transparent; color: var(--muted);
+  padding: 4px 10px; border-radius: 999px; font: 500 12px/1.2 var(--mono);
+}
+.chip[aria-pressed="true"][data-k="pass"] { background: var(--pass); border-color: var(--pass); color: var(--surface); }
+.chip[aria-pressed="true"][data-k="issue"] { background: var(--issue); border-color: var(--issue); color: var(--surface); }
+.chip[aria-pressed="true"][data-k="skip"] { background: var(--skip); border-color: var(--skip); color: var(--surface); }
+.do, .expect { margin: 0; font-size: 14px; min-width: 0; }
+.expect { color: var(--muted); }
+.expect b { color: var(--ink); font-weight: 600; }
+code { font: 13px/1.4 var(--mono); background: var(--code-bg); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+.snippet { position: relative; min-width: 0; }
+.snippet pre { margin: 0; background: var(--code-bg); border-radius: 6px; padding: 10px 12px; padding-right: 64px; overflow-x: auto; font: 13px/1.5 var(--mono); }
+.copy {
+  position: absolute; top: 6px; right: 6px; border: 1px solid var(--line); background: var(--surface);
+  color: var(--muted); border-radius: 4px; font: 500 11px/1 var(--mono); padding: 5px 7px;
+}
+textarea {
+  width: 100%; min-height: 56px; resize: vertical; font: 14px/1.4 var(--body); color: var(--ink);
+  background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px;
+}
+.ratings { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.rating { display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 600; }
+select { font: 14px var(--body); color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 7px 8px; }
+.verdicts { display: flex; flex-wrap: wrap; gap: 6px 14px; font: 12px/1.4 var(--mono); color: var(--muted); }
+.verdicts span::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; background: currentColor; }
+.v-pass { color: var(--pass); } .v-issue { color: var(--issue); } .v-skip { color: var(--skip); }
+@media (prefers-reduced-motion: reduce) { .meter-track span { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header class="intro">
+    <span class="eyebrow">leet mod · Claude Desktop · manual QA</span>
+    <h1>Leet Desktop Test Run</h1>
+    <p class="lede">Work top to bottom in a Claude Desktop Code session. Mark each check Pass, Issue or Skip, and write what you saw when something feels off, even if it technically works. When you finish, press Copy report and paste it into Claude Code.</p>
+    <div class="verdicts"><span class="v-pass">Pass: works and feels right</span><span class="v-issue">Issue: broken, confusing or ugly</span><span class="v-skip">Skip: could not test</span></div>
+  </header>
+
+  <div class="runbar">
+    <div class="meter">
+      <span class="meter-label" id="meter-label">0 of 0 checked</span>
+      <div class="meter-track" aria-hidden="true"><span class="seg-pass" id="seg-pass"></span><span class="seg-issue" id="seg-issue"></span><span class="seg-skip" id="seg-skip"></span></div>
+    </div>
+    <button class="btn primary" id="copy-report" type="button">Copy report</button>
+    <button class="btn" id="reset" type="button">Reset</button>
+    <span class="status" id="status" role="status"></span>
+  </div>
+
+  <main id="sections" class="wrap" style="gap:36px"></main>
+
+  <section class="block" aria-labelledby="ratings-h">
+    <div class="block-head"><span class="block-num">15</span><h2 id="ratings-h">Overall impression</h2></div>
+    <div class="ratings">
+      <label class="rating" for="r-visual">Visual appeal<select id="r-visual"></select></label>
+      <label class="rating" for="r-clarity">Clear what to do next<select id="r-clarity"></select></label>
+      <label class="rating" for="r-speed">Feels fast enough<select id="r-speed"></select></label>
+      <label class="rating" for="r-learn">Would help me learn<select id="r-learn"></select></label>
+    </div>
+    <label class="rating" for="r-notes">What confused or annoyed you most? What would you change first?
+      <textarea id="r-notes" placeholder="Free notes for Claude"></textarea>
+    </label>
+  </section>
+</div>
+
+<textarea id="fallback" aria-label="Report text" hidden></textarea>
+
+<script>
+// Desktop keeps its own Claude Code build under the app's package folder; this finds the newest.
+const CLAUDE_EXE = String.raw`& (Get-ChildItem "$env:LOCALAPPDATA\Packages\Claude_*\LocalCache\Roaming\Claude\claude-code\*\*\claude.exe" | Sort-Object LastWriteTime | Select-Object -Last 1).FullName`;
+
+const SECTIONS = [
+  { title: 'Install the mod for Desktop', note: 'Desktop runs Claude Code on Windows with its own %USERPROFILE%\\.claude and cannot load a mod from the WSL filesystem, so the mod is copied into that profile\u2019s mods folder, %USERPROFILE%\\.claude\\skills\\leet, where Claude Code loads it by itself.', tests: [
+    { t: 'Copy the mod to Windows', d: 'In WSL, from the mod folder, run the sync script.', code: 'scripts/sync-desktop.sh', e: 'It finishes silently, and <b>%USERPROFILE%\\.claude\\skills\\leet</b> holds the mod.' },
+    { t: 'The mod is loaded for Desktop', d: 'In PowerShell, list the plugins.', code: `${CLAUDE_EXE} plugin list`, e: '<b>leet@skills-dir</b> shows <b>Path: ~/.claude/skills/leet</b> and <b>Status: loaded</b>.' },
+    { t: 'Restart Desktop and open a Code session', d: 'Quit Claude Desktop from the tray icon (closing the window is not enough), reopen it, and start a local Code session in any folder, e.g. your home folder.', e: 'The session starts normally. In the background Claude writes today\u2019s problem into <b>%USERPROFILE%\\leetcode</b> (about a minute). Progress here is separate from the WSL hub.' },
+    { t: '/leet is offered in the slash menu', d: 'Type <code>/le</code> in the prompt box.', e: '<b>/leet</b> appears with \u201cOpen the LeetCode hub: daily problem, tutor, progress\u201d.' },
+  ]},
+  { title: 'First look', tests: [
+    { t: 'The hub opens', d: 'Run <code>/leet</code>.', e: 'A LeetCode panel opens. Note where Desktop puts it (side panel, above the prompt, a tab) and whether you can resize or close it.' },
+    { t: 'Header reads at a glance', d: 'Look at the top line.', e: '<b>LeetCode \u00b7 \ud83d\udd25 0 \u00b7 \u2713 0 solved (E 0 \u00b7 M 0 \u00b7 H 0)</b>, with E green, M amber, H red.' },
+    { t: 'Tabs work and show where you are', d: 'Click each tab: Home, Problem, Tutor, Submissions, Problems, Notebook.', e: 'The current tab looks selected and the others look secondary. Each click switches the body right away.' },
+    { t: 'Both themes are legible', d: 'Switch Desktop between light and dark appearance.', e: 'Dim text, borders and coloured verdicts stay readable in both.' },
+    { t: 'Narrow and wide windows', d: 'Make the window narrow, then wide.', e: 'Rows wrap or truncate cleanly. No text runs over controls.' },
+  ]},
+  { title: 'Daily strip above the prompt', note: 'The terminal draws this band. Desktop may or may not; record what you see either way.', tests: [
+    { t: 'The strip shows with the hub closed', d: 'Close the hub panel and look just above the prompt box.', e: '<b>\ud83d\udccc Daily: #217 Contains Duplicate \u00b7 Easy \u00b7 Arrays & Hashing</b> with <b>Open</b> and <b>Later</b>. Mark Skip and describe it if Desktop shows nothing.' },
+    { t: 'Open and Later work', d: 'Press Open. Later in the run, press Later on another day\u2019s strip if you see one.', e: 'Open shows the hub on the problem. Later hides the strip until tomorrow.' },
+  ]},
+  { title: 'Home tab', tests: [
+    { t: 'Today\u2019s problem card', d: 'Open Home.', e: 'A framed card: <b>#217 Contains Duplicate \u00b7 Easy \u00b7 Arrays & Hashing</b> and a <b>Start</b> button.' },
+    { t: 'Practice more', d: 'Open the Level dropdown, pick Medium, then back to Roadmap.', e: 'A native dropdown with Roadmap, Easy, Medium, Hard. The choice sticks.' },
+    { t: 'Roadmap', d: 'Read the Roadmap list.', e: '18 patterns. Arrays & Hashing is open (\u25b8, a bar, 0/9, Easy). The rest are dimmed with \ud83d\udd12.' },
+  ]},
+  { title: 'Problem tab', tests: [
+    { t: 'Starting the problem', d: 'Press Start on Home. If today\u2019s problem was not ready, time how long the wait is.', e: 'A \u23f3 line says Claude is preparing the problem, then the Problem tab opens. Note the wait if over ~10 s.' },
+    { t: 'The statement reads like LeetCode', d: 'Read the statement top to bottom.', e: 'Formatted description with inline code, Example blocks with Input and Output, a Constraints list.' },
+    { t: 'The editor shows the starter', d: 'Look below the statement.', e: 'A framed editor with line numbers, highlighted TypeScript (keywords, types, strings in different colours), a cursor block and a status row: Ln, Col, saved as you type, Ctrl+R run.' },
+    { t: 'Clicking focuses the editor', d: 'Click inside the function body, type a few letters, then press Esc.', e: 'The cursor jumps to where you clicked and letters appear there. Esc hands the keys back to the prompt.' },
+    { t: 'It types like a code editor', d: 'Inside the body, type <code>if (nums.length) {</code> then Enter.', e: 'The ) and } close themselves, Enter opens an indented line with } below it. Tab adds 2 spaces, Shift+Tab removes them, Backspace in indentation removes a whole level.' },
+    { t: 'Moving around', d: 'Try the arrows, Home, End, Ctrl+Left/Right, PageUp/PageDown, Ctrl+Z and Ctrl+Y.', e: 'All move or undo as in a normal editor. Long lines scroll sideways to keep the cursor visible.' },
+    { t: 'Selecting with the mouse', d: 'Drag across two lines. Then double-click a variable name.', e: 'The dragged range is highlighted, line breaks included. The double-click selects just that word. The status row says how many chars are selected.' },
+    { t: 'Selecting with the keyboard', d: 'Try Shift+arrows, Shift+Home/End, Ctrl+Shift+Left/Right and Ctrl+A.', e: 'The highlight grows and shrinks with the cursor. Plain Left or Right collapses it without deleting.' },
+    { t: 'Acting on a selection', d: 'With text selected: type a letter; undo; press Tab and Shift+Tab on several lines; type ( ; press Backspace.', e: 'Typing replaces it, Tab and Shift+Tab shift every selected line, ( wraps it in brackets, Backspace deletes it.' },
+    { t: 'Copy, cut and paste', d: 'Select text, press Ctrl+C, then paste it into Notepad. Then Ctrl+X and Ctrl+V inside the editor.', e: 'If Desktop has no clipboard access, a toast says the copy stays inside the editor; Ctrl+V still pastes it back there. Note which you got.' },
+    { t: 'Pasting code', d: 'Copy a few lines of code from anywhere, click in the editor, paste.', e: 'The lines appear at the cursor with their indentation. <b>This is the riskiest part; describe exactly what happens.</b>' },
+    { t: 'Saved to disk', d: 'Type something, wait a second, press <b>Open in VS Code</b>.', e: 'VS Code shows the same text. Edit and save there, and within ~2 s the pane editor shows your VS Code change.' },
+    { t: 'Room to code', d: 'Press “Hide the statement”, then “Show the problem statement”.', e: 'The statement collapses so the editor moves up, and comes back.' },
+    { t: 'Action buttons', d: 'Look at the button row.', e: 'Open in VS Code, Run, Submit (highlighted), Hint, Give up, Interview mode (20m). It wraps cleanly when narrow.' },
+  ]},
+  { title: 'Run and verdicts', note: 'Type or paste each body into containsDuplicate in the pane editor, then press the button named (or Ctrl+R for Run). This shows every verdict screen.', tests: [
+    { t: 'Unchanged starter, Run', d: 'Run with the empty function body.', e: 'Red <b>Wrong Answer</b> box: Case 1, Input, Expected <code>true</code>, Output <code>null</code>.' },
+    { t: 'Runtime error, Run', code: "throw new Error('boom')", e: 'Red <b>Runtime Error</b> with a short stack trace pointing at solution.ts.' },
+    { t: 'Syntax error, Run', code: 'return nums.length > (', e: 'Red <b>Compile Error</b> with a readable message and the line.' },
+    { t: 'Console output, Run', code: "console.log('size', nums.length)\nreturn false", e: 'Wrong Answer that also shows <b>stdout: size 4</b>.' },
+    { t: 'Infinite loop, Submit', code: 'while (true) {}', e: 'The \u23f3 line stays up for about 15 s, then <b>Time Limit Exceeded</b>. On Windows the case reads \u201cone of the tests\u201d.' },
+    { t: 'Correct solution, Ctrl+R', code: 'return new Set(nums).size !== nums.length', e: 'Pressing Ctrl+R inside the editor runs the examples: green <b>Examples pass</b> with each example listed and its output.' },
+  ]},
+  { title: 'Accepted', tests: [
+    { t: 'Submit the correct solution', d: 'Press Submit.', e: 'A toast: <b>Accepted! \u00b7 \ud83d\udd25 Daily done, streak 1</b>. Note where the toast appears and if you could read it in time.' },
+    { t: 'Claude\u2019s review', d: 'Wait for the \u23f3 review line to finish.', e: '<b>Claude\u2019s review</b> with Complexity, Optimal?, Good, Improve.' },
+    { t: 'Explain-it-back prompt', d: 'Look below the result.', e: 'A <b>\ud83d\udcac Explain it back</b> box with one question and an Answer in Tutor button.' },
+    { t: 'Progress updated', d: 'Check the header, then Home.', e: 'Header shows \ud83d\udd25 1 and \u2713 1 solved (E 1). Home says \u201c\u2713 Done for today\u201d. The daily strip is gone.' },
+    { t: 'Solution committed (optional)', d: 'In PowerShell:', code: 'git -C $env:USERPROFILE\\leetcode log --oneline', e: 'A commit \u201cSolve 217. Contains Duplicate\u2026\u201d. If there is none, Windows git may have no name or email set; note it.' },
+  ]},
+  { title: 'Tutor and notebook', tests: [
+    { t: 'Answer the explain-back question', d: 'Press Answer in Tutor, type two sentences, press Enter.', e: 'Your message, then short feedback and \u201c\ud83d\udcd2 Saved a card to your Arrays & Hashing notebook\u201d.' },
+    { t: 'The text box', d: 'Type a multi-line message, send it.', e: 'Several lines fit, Enter sends, the box empties. Note whether the cursor stays in the box.' },
+    { t: 'Notebook card', d: 'Notebook tab, choose Arrays & Hashing.', e: 'The card renders: heading, Recognize it, Key idea, a TypeScript template block, Complexity, In their words, Pitfalls.' },
+    { t: 'Hint on a new problem', d: 'Home, Next problem (#242 Valid Anagram), then Hint.', e: 'Switches to Tutor. A short nudge or question, not the solution.' },
+    { t: 'Tutor holds back the answer', d: 'Ask \u201cjust give me the code\u201d.', e: 'It declines to write the solution and suggests Give up for the editorial.' },
+  ]},
+  { title: 'Give up and editorial', tests: [
+    { t: 'Give up asks first', d: 'On #242 press Give up, then Keep trying.', e: 'An inline warning with Yes, show me and Keep trying. Keep trying removes it.' },
+    { t: 'Editorial', d: 'Press Give up again, then Yes, show me.', e: '\u23f3 writing the editorial, then Intuition, Approach, Complexity, Code, Pattern takeaway. The Give up button becomes Editorial.' },
+  ]},
+  { title: 'Interview mode', tests: [
+    { t: 'Timer runs', d: 'Next problem, then Interview mode (20m).', e: '<b>\u23f1 19:59 left \u00b7 interview mode</b> counting down every second. The Hint button disappears.' },
+    { t: 'Tutor is locked', d: 'Open the Tutor tab.', e: 'A message that the tutor is off until the timer ends.' },
+    { t: 'Stop timer', d: 'Problem tab, Stop timer.', e: 'The countdown goes away and Hint comes back.' },
+  ]},
+  { title: 'Submissions tab', tests: [
+    { t: 'History list', d: 'Open #217 from Problems, then Submissions.', e: 'Newest first: \u2713/\u2717, verdict, run or submit, passed count, ms, time.' },
+    { t: 'Submission detail', d: 'Click an older entry.', e: 'Its result box and the code from that moment, with line numbers and highlighting.' },
+  ]},
+  { title: 'Problems list', tests: [
+    { t: 'Filters', d: 'Try Level = Easy, Status = Solved, Pattern = Trees.', e: 'The count line and rows update on each change.' },
+    { t: 'Marks and locked rows', d: 'Reset filters to All and scan the list.', e: '\u2713 solved, \u2022 started, \ud83d\udd12 dimmed for not-yet-unlocked. Clicking a \ud83d\udd12 problem still opens it.' },
+  ]},
+  { title: 'Keyboard', tests: [
+    { t: 'Tab and Enter', d: 'Click into the panel, then use Tab and Enter.', e: 'Focus moves across buttons with a visible ring; Enter presses.' },
+    { t: 'Letter shortcuts', d: 'With the panel focused, press <code>h</code>, <code>p</code>, <code>t</code>.', e: 'In the terminal these switch tabs. Desktop may ignore them; record which.' },
+  ]},
+  { title: 'Persistence', tests: [
+    { t: 'Close and reopen the hub', d: 'Close the panel, run /leet again.', e: 'Same tab and problem as before.' },
+    { t: 'New session', d: 'Quit Desktop fully, reopen, start a new Code session, run /leet.', e: 'Streak, solved count and notebook are kept. No problem is open, and Home shows today as done.' },
+  ]},
+];
+
+const RATING = ['', '1 \u2014 poor', '2', '3 \u2014 okay', '4', '5 \u2014 great'];
+const KEY = 'leet-desktop-run-v1';
+let state = { v: {}, n: {}, r: {} };
+try { state = Object.assign(state, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (_) {}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (_) {} };
+
+const esc = s => s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]);
+const all = [];
+const main = document.getElementById('sections');
+
+SECTIONS.forEach((sec, si) => {
+  const block = document.createElement('section');
+  block.className = 'block';
+  block.innerHTML = `<div class="block-head"><span class="block-num">${String(si).padStart(2, '0')}</span><h2>${sec.title}</h2></div>${sec.note ? `<p class="block-note">${sec.note}</p>` : ''}<div class="tests"></div>`;
+  const list = block.querySelector('.tests');
+  sec.tests.forEach((test, ti) => {
+    const id = `${si}.${ti + 1}`;
+    all.push({ id, sec: sec.title, ...test });
+    const row = document.createElement('div');
+    row.className = 'test';
+    row.dataset.id = id;
+    row.innerHTML = `
+      <div class="test-top">
+        <div class="test-title"><span class="test-id">${id}</span>${test.t}</div>
+        <div class="chips" role="group" aria-label="Verdict for ${id}">
+          <button class="chip" type="button" data-k="pass" aria-pressed="false">Pass</button>
+          <button class="chip" type="button" data-k="issue" aria-pressed="false">Issue</button>
+          <button class="chip" type="button" data-k="skip" aria-pressed="false">Skip</button>
+        </div>
+      </div>
+      ${test.d ? `<p class="do">${test.d}</p>` : ''}
+      ${test.code ? `<div class="snippet"><pre><code>${esc(test.code)}</code></pre><button class="copy" type="button">Copy</button></div>` : ''}
+      <p class="expect"><b>Expect:</b> ${test.e}</p>
+      <textarea id="note-${id}" aria-label="Notes for ${id}" placeholder="What you saw (optional)" ${state.n[id] || state.v[id] === 'issue' ? '' : 'hidden'}></textarea>`;
+    const note = row.querySelector('textarea');
+    note.value = state.n[id] || '';
+    note.addEventListener('input', () => { state.n[id] = note.value; save(); });
+    row.querySelectorAll('.chip').forEach(chip => chip.addEventListener('click', () => {
+      state.v[id] = state.v[id] === chip.dataset.k ? undefined : chip.dataset.k;
+      if (state.v[id]) note.hidden = false;
+      save(); paint();
+      if (state.v[id] === 'issue') note.focus();
+    }));
+    const copy = row.querySelector('.copy');
+    if (copy) copy.addEventListener('click', () => copyText(test.code, copy));
+    list.appendChild(row);
+  });
+  main.appendChild(block);
+});
+
+['visual', 'clarity', 'speed', 'learn'].forEach(k => {
+  const sel = document.getElementById(`r-${k}`);
+  sel.innerHTML = RATING.map((label, i) => `<option value="${i || ''}">${label || 'Rate\u2026'}</option>`).join('');
+  sel.value = state.r[k] || '';
+  sel.addEventListener('change', () => { state.r[k] = sel.value; save(); });
+});
+const notes = document.getElementById('r-notes');
+notes.value = state.r.notes || '';
+notes.addEventListener('input', () => { state.r.notes = notes.value; save(); });
+
+function paint() {
+  const counts = { pass: 0, issue: 0, skip: 0 };
+  document.querySelectorAll('.test').forEach(row => {
+    const v = state.v[row.dataset.id];
+    row.dataset.v = v || '';
+    row.querySelectorAll('.chip').forEach(chip => chip.setAttribute('aria-pressed', String(chip.dataset.k === v)));
+    if (v) counts[v] += 1;
+  });
+  const total = all.length, done = counts.pass + counts.issue + counts.skip;
+  document.getElementById('meter-label').textContent = `${done} of ${total} checked \u00b7 ${counts.pass} pass \u00b7 ${counts.issue} issue \u00b7 ${counts.skip} skip`;
+  ['pass', 'issue', 'skip'].forEach(k => { document.getElementById(`seg-${k}`).style.width = `${(counts[k] / total) * 100}%`; });
+}
+
+function report() {
+  const lines = ['# leet mod: Claude Desktop test run', ''];
+  let sec = '';
+  all.forEach(t => {
+    if (t.sec !== sec) { sec = t.sec; lines.push('', `## ${sec}`); }
+    const v = state.v[t.id] ? state.v[t.id].toUpperCase() : 'NOT RUN';
+    const n = (state.n[t.id] || '').trim();
+    lines.push(`- ${t.id} ${t.t}: ${v}${n ? ` \u2014 ${n.replace(/\n+/g, ' / ')}` : ''}`);
+  });
+  lines.push('', '## Ratings (1-5)');
+  [['visual', 'Visual appeal'], ['clarity', 'Clear what to do next'], ['speed', 'Feels fast enough'], ['learn', 'Would help me learn']]
+    .forEach(([k, label]) => lines.push(`- ${label}: ${state.r[k] || '-'}`));
+  if ((state.r.notes || '').trim()) lines.push('', '## Notes', state.r.notes.trim());
+  return lines.join('\n');
+}
+
+function say(text) {
+  const el = document.getElementById('status');
+  el.textContent = text;
+  setTimeout(() => { if (el.textContent === text) el.textContent = ''; }, 4000);
+}
+
+function copyText(text, button) {
+  const done = () => { if (button) { const old = button.textContent; button.textContent = 'Copied'; setTimeout(() => { button.textContent = old; }, 1500); } };
+  const fallback = () => {
+    const area = document.getElementById('fallback');
+    area.hidden = false; area.value = text; area.select();
+    say('Copy was blocked: the text is selected below, press Ctrl+C.');
+  };
+  try { navigator.clipboard.writeText(text).then(done, fallback); } catch (_) { fallback(); }
+}
+
+document.getElementById('copy-report').addEventListener('click', () => {
+  const text = report();
+  try {
+    navigator.clipboard.writeText(text).then(() => say('Report copied. Paste it into Claude Code.'), () => copyText(text));
+  } catch (_) { copyText(text); }
+});
+const resetBtn = document.getElementById('reset');
+let armed = false;
+resetBtn.addEventListener('click', () => {
+  if (!armed) { armed = true; resetBtn.textContent = 'Click again to clear'; setTimeout(() => { armed = false; resetBtn.textContent = 'Reset'; }, 3000); return; }
+  state = { v: {}, n: {}, r: {} }; save(); location.reload();
+});
+
+paint();
+</script>

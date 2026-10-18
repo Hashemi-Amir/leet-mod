@@ -1,0 +1,6 @@
+{
+  "name": "leet",
+  "version": "0.1.1",
+  "description": "A LeetCode hub inside Claude Code: daily problems on a pattern roadmap, an in-pane code editor with a console, real test runs, a Socratic tutor and progress tracking.",
+  "types": "./types/index.d.ts"
+}
